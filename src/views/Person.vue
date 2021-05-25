@@ -14,7 +14,19 @@
       <tr
         v-for="(material, index) in materials"
         :key="material.id"
-        @click="selectedMaterial = material"
+        @click="
+          () => {
+            hide();
+            selectedMaterial = material;
+          }
+        "
+        @contextmenu="
+          (e) => {
+            e.preventDefault();
+            selectedMaterial = material;
+            show(e);
+          }
+        "
         :class="
           selectedMaterial.id === material.id &&
           selectedMaterial.id &&
@@ -51,6 +63,18 @@
       <button @click="cancel">Отмена</button>
       <button @click="materials.push({})">+</button>
     </div>
+    <v-contextmenu ref="contextmenu">
+      <v-contextmenu-item @click="showModal = true">Удалить</v-contextmenu-item>
+    </v-contextmenu>
+
+    <modal v-if="showModal" @close="showModal = false" @delete="deleteHandler">
+      <template v-slot:header>
+        <h3>Удлаение</h3>
+      </template>
+      <template v-slot:body>
+        <h3>Вы уверенны что хотите удалить материальную ценность?</h3>
+      </template>
+    </modal>
   </div>
 </template>
 
@@ -63,7 +87,11 @@ import {
   updatePerson,
   updateMaterials,
   createMaterial,
+  deleteMaterial,
 } from "../api";
+import { directive, Contextmenu, ContextmenuItem } from "v-contextmenu";
+import "v-contextmenu/dist/themes/default.css";
+import modal from "../components/Modal";
 
 export default {
   name: "Person",
@@ -73,7 +101,16 @@ export default {
       materials: [],
       selectedMaterial: {},
       cost: 0,
+      showModal: false,
     };
+  },
+
+  directives: { contextmenu: directive },
+
+  components: {
+    [Contextmenu.name]: Contextmenu,
+    [ContextmenuItem.name]: ContextmenuItem,
+    modal,
   },
 
   computed: {
@@ -92,6 +129,19 @@ export default {
       router.push({ name: "Home" });
     },
 
+    deleteHandler: function () {
+      this.materials.forEach(async (element, index) => {
+        if (
+          element &&
+          this.selectedMaterial &&
+          element.id === this.selectedMaterial.id
+        ) {
+          await deleteMaterial(this.selectedMaterial.id);
+          this.materials.splice(index, 1);
+        }
+      });
+    },
+
     saveHandler: async function () {
       this.materials.forEach(async (material) => {
         if (material.id) {
@@ -102,6 +152,17 @@ export default {
       });
       await updatePerson(this.person);
       alert("Изменения были успешно сохранены");
+    },
+
+    show(e) {
+      this.$refs.contextmenu.show({
+        top: e.clientY,
+        left: e.clientX,
+      });
+    },
+
+    hide() {
+      this.$refs.contextmenu.hide();
     },
   },
 

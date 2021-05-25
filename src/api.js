@@ -41,6 +41,16 @@ export const updatePerson = async (changes) => {
   }
 }
 
+export const deletePerson = async (id) => {
+  try{
+    await fetch(`${server}/api/person/${id}`, {
+      method: 'DELETE',
+    });
+  }catch(e){
+    console.log(e);
+  }
+}
+
 export const loadMaterials = async (id) => {
   try{
     const res = await fetch(`${server}/api/material?id=${id}`);
@@ -81,11 +91,19 @@ export const createMaterial = async (material) => {
 
 export const deleteMaterial = async (id) => {
   try{
-    const res = await fetch(
-      `${server}/api/material/${id}`
-    );
-    const data = await res.json();
-    return data;
+    await fetch(`${server}/api/material/${id}`, {
+      method: 'DELETE',
+    });
+  }catch(e){
+    console.log(e);
+  }
+}
+
+export const deleteMaterialByPersonId = async (id) => {
+  try{
+    await fetch(`${server}/api/material/person/${id}`, {
+      method: 'DELETE',
+    });
   }catch(e){
     console.log(e);
   }

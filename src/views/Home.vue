@@ -25,10 +25,21 @@
       <tr
         v-for="person in persons"
         :key="person.id"
-        @click="selectedPerson = person"
+        @click="
+          () => {
+            hide();
+            selectedPerson = person;
+          }
+        "
         @dblclick="personDetail"
         :class="selectedPerson.id === person.id && 'table__row-active'"
         class="table-row"
+        @contextmenu.prevent="
+          (e) => {
+            selectedPerson = person;
+            show(e);
+          }
+        "
       >
         <td>{{ `${person.surname} ${person.name} ${person.patronymic}` }}</td>
         <td>{{ person.count }}</td>
@@ -46,12 +57,35 @@
         {{ page }}
       </button>
     </div>
+
+    <v-contextmenu ref="contextmenu">
+      <v-contextmenu-item @click="showModal = true">Удалить</v-contextmenu-item>
+    </v-contextmenu>
+    <modal v-if="showModal" @close="showModal = false" @delete="deleteHandler">
+      <template v-slot:header>
+        <h3>Удлаение</h3>
+      </template>
+      <template v-slot:body>
+        <h3>
+          Вы уверенны что хотите удалить сотрудника и все его материальные
+          ценности?
+        </h3>
+      </template>
+    </modal>
   </div>
 </template>
 
 <script>
-import { loadPersons, loadMaterials } from "../api";
+import {
+  loadPersons,
+  loadMaterials,
+  deletePerson,
+  deleteMaterialByPersonId,
+} from "../api";
 import router from "../router/index";
+import { directive, Contextmenu, ContextmenuItem } from "v-contextmenu";
+import "v-contextmenu/dist/themes/default.css";
+import modal from "../components/Modal";
 
 export default {
   name: "Home",
@@ -63,7 +97,16 @@ export default {
       sort: "",
       direction: "",
       selectedPerson: {},
+      showModal: false,
     };
+  },
+
+  directives: { contextmenu: directive },
+
+  components: {
+    [Contextmenu.name]: Contextmenu,
+    [ContextmenuItem.name]: ContextmenuItem,
+    modal,
   },
 
   methods: {
@@ -74,6 +117,21 @@ export default {
           ? "table__head-active-desc"
           : "table__head-active-asc")
       );
+    },
+
+    deleteHandler: function () {
+      this.persons.forEach(async (element, index) => {
+        if (
+          element &&
+          this.selectedPerson &&
+          element.id === this.selectedPerson.id
+        ) {
+          await deleteMaterialByPersonId(this.selectedPerson.id);
+          await deletePerson(this.selectedPerson.id);
+          this.persons.splice(index, 1);
+          this.setPersons();
+        }
+      });
     },
 
     sortBy: function (by) {
@@ -99,6 +157,17 @@ export default {
       );
       this.persons = data.persons;
       this.pages = data.pages;
+    },
+
+    show(e) {
+      this.$refs.contextmenu.show({
+        top: e.clientY,
+        left: e.clientX,
+      });
+    },
+
+    hide() {
+      this.$refs.contextmenu.hide();
     },
   },
 
