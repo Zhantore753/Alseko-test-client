@@ -3,8 +3,8 @@
     <p>Фамилия: <input type="text" v-model="person.surname" /></p>
     <p>Имя: <input type="text" v-model="person.name" /></p>
     <p>Отчество: <input type="text" v-model="person.patronymic" /></p>
-    <p v-if="mode === 'update'">Список выданных материальных ценностей:</p>
-    <table v-if="mode === 'update'" style="width: 100%">
+    <p>Список выданных материальных ценностей:</p>
+    <table style="width: 100%">
       <tr>
         <th>№ п/п</th>
         <th>Название</th>
@@ -145,15 +145,19 @@ export default {
       });
     },
 
+    createUpdateMaterials: function (personId) {
+      this.materials.forEach(async (material) => {
+        if (material.id) {
+          await updateMaterials(material);
+        } else {
+          await createMaterial({ ...material, personId });
+        }
+      });
+    },
+
     saveHandler: async function () {
       if (this.mode === "update") {
-        this.materials.forEach(async (material) => {
-          if (material.id) {
-            await updateMaterials(material);
-          } else {
-            await createMaterial({ ...material, personId: this.person.id });
-          }
-        });
+        this.createUpdateMaterials(this.person.id);
         await updatePerson(this.person);
         alert("Изменения были успешно сохранены");
       } else {
@@ -163,6 +167,7 @@ export default {
             surname: this.person.surname,
             patronymic: this.person.patronymic,
           });
+          this.createUpdateMaterials(data.person.id);
           alert("Сотрудник был создан");
           router.push({ name: "Person", params: { id: data.person.id } });
           this.loadPersonInfo(data.person.id);
