@@ -149,7 +149,7 @@ export default {
       this.materials.forEach(async (material) => {
         if (material.id) {
           await updateMaterials(material);
-        } else {
+        } else if (material.name && material.cost) {
           await createMaterial({ ...material, personId });
         }
       });
