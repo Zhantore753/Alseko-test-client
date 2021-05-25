@@ -31,7 +31,7 @@
             selectedPerson = person;
           }
         "
-        @dblclick="personDetail"
+        @dblclick="personDetail(selectedPerson.id)"
         :class="selectedPerson.id === person.id && 'table__row-active'"
         class="table-row"
         @contextmenu.prevent="
@@ -57,6 +57,9 @@
         {{ page }}
       </button>
     </div>
+    <button @click="personDetail('create')" style="margin-top: 10px">
+      Добваить сотрудника
+    </button>
 
     <v-contextmenu ref="contextmenu">
       <v-contextmenu-item @click="showModal = true">Удалить</v-contextmenu-item>
@@ -145,8 +148,8 @@ export default {
       return (this.direction = "ASC");
     },
 
-    personDetail: function () {
-      router.push({ name: "Person", params: { id: this.selectedPerson.id } });
+    personDetail: function (id) {
+      router.push({ name: "Person", params: { id } });
     },
 
     setPersons: async function () {

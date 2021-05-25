@@ -51,6 +51,22 @@ export const deletePerson = async (id) => {
   }
 }
 
+export const createPerson = async (person) => {
+  try{
+    const res = await fetch(`${server}/api/person`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(person)
+    });
+    const data = await res.json();
+    return data;
+  }catch(e){
+    console.log(e);
+  }
+}
+
 export const loadMaterials = async (id) => {
   try{
     const res = await fetch(`${server}/api/material?id=${id}`);

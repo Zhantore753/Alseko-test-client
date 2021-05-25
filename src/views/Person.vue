@@ -3,8 +3,8 @@
     <p>Фамилия: <input type="text" v-model="person.surname" /></p>
     <p>Имя: <input type="text" v-model="person.name" /></p>
     <p>Отчество: <input type="text" v-model="person.patronymic" /></p>
-    <p>Список выданных материальных ценностей:</p>
-    <table style="width: 100%">
+    <p v-if="mode === 'update'">Список выданных материальных ценностей:</p>
+    <table v-if="mode === 'update'" style="width: 100%">
       <tr>
         <th>№ п/п</th>
         <th>Название</th>
@@ -59,7 +59,8 @@
       </tr>
     </table>
     <div class="change__btns">
-      <button @click="saveHandler">Сохранить</button>
+      <button v-if="mode === 'create'" @click="saveHandler">Создать</button>
+      <button v-if="mode === 'update'" @click="saveHandler">Сохранить</button>
       <button @click="cancel">Отмена</button>
       <button @click="materials.push({})">+</button>
     </div>
@@ -88,6 +89,7 @@ import {
   updateMaterials,
   createMaterial,
   deleteMaterial,
+  createPerson,
 } from "../api";
 import { directive, Contextmenu, ContextmenuItem } from "v-contextmenu";
 import "v-contextmenu/dist/themes/default.css";
@@ -102,6 +104,7 @@ export default {
       selectedMaterial: {},
       cost: 0,
       showModal: false,
+      mode: "",
     };
   },
 
@@ -143,15 +146,28 @@ export default {
     },
 
     saveHandler: async function () {
-      this.materials.forEach(async (material) => {
-        if (material.id) {
-          await updateMaterials(material);
-        } else {
-          await createMaterial({ ...material, personId: this.person.id });
+      if (this.mode === "update") {
+        this.materials.forEach(async (material) => {
+          if (material.id) {
+            await updateMaterials(material);
+          } else {
+            await createMaterial({ ...material, personId: this.person.id });
+          }
+        });
+        await updatePerson(this.person);
+        alert("Изменения были успешно сохранены");
+      } else {
+        if (this.person.name && this.person.surname && this.person.patronymic) {
+          const data = await createPerson({
+            name: this.person.name,
+            surname: this.person.surname,
+            patronymic: this.person.patronymic,
+          });
+          alert("Сотрудник был создан");
+          router.push({ name: "Person", params: { id: data.person.id } });
+          this.loadPersonInfo(data.person.id);
         }
-      });
-      await updatePerson(this.person);
-      alert("Изменения были успешно сохранены");
+      }
     },
 
     show(e) {
@@ -164,14 +180,23 @@ export default {
     hide() {
       this.$refs.contextmenu.hide();
     },
+
+    async loadPersonInfo(id) {
+      const data = await loadOnePerson(id);
+      this.person = data.person;
+      const materialsData = await loadMaterials(id);
+      this.materials = materialsData.materials;
+      this.mode = "update";
+    },
   },
 
   async created() {
     const route = useRoute();
-    const data = await loadOnePerson(route.params.id);
-    this.person = data.person;
-    const materialsData = await loadMaterials(route.params.id);
-    this.materials = materialsData.materials;
+    if (route.params.id !== "create") {
+      this.loadPersonInfo(route.params.id);
+    } else {
+      this.mode = "create";
+    }
   },
 };
 </script>
